@@ -3,24 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1.0,user-scalable=no" />
-<title>素数テトリス（モバイル最適／矢印だけ操作）</title>
+<title>素数テトリス（モバイル最適／全画面対応）</title>
 <style>
   :root{
     --cell: clamp(20px, 6.2vw, 34px);
-    --btn: clamp(30px, 6vw, 38px);  /* さらに小型化 */
+    --btn: clamp(30px, 6vw, 38px);  /* タッチ端末の矢印ボタンサイズ */
   }
   @media (max-height: 720px){ :root{ --btn: clamp(28px, 5.6vw, 36px); } }
   @media (max-height: 600px){ :root{ --btn: clamp(26px, 5.2vw, 34px); } }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body{ height:100svh; overflow:hidden; }
+  /* 全画面でも背景が途切れないように */
+  html, html:fullscreen, body{ background:#0f172a; }
+
   body{
     font-family: system-ui, -apple-system, "BIZ UDGothic", Arial, sans-serif;
-    background:#0f172a; color:#fff; margin:0; padding:10px;
+    color:#fff; margin:0; padding:10px;
     display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
     touch-action: manipulation;
     transition: padding-bottom .15s ease;
   }
+
   h1{ margin:4px 0 2px; font-size:clamp(18px,5vw,22px); }
   #info{ margin:4px 0 8px; font-size:0.95rem; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 
@@ -42,6 +46,7 @@
     justify-content:center; align-items:center; font-weight:800; font-size:calc(var(--cell) * 0.6);
     user-select:none; transform-origin:center; color:#fff; background:#334155;
   }
+  /* 数字色 */
   .cell.d1{ background:#3b82f6; }  .cell.d2{ background:#10b981; }  .cell.d3{ background:#ef4444; }
   .cell.d4{ background:#f59e0b; }  .cell.d5{ background:#a855f7; }  .cell.d6{ background:#14b8a6; }
   .cell.d7{ background:#ec4899; }  .cell.d8{ background:#6366f1; }  .cell.d9{ background:#f97316; }
@@ -49,12 +54,14 @@
   .active{ outline:2px solid #ffffffaa; }
   .fixed{ outline:1px solid #00000040; }
 
+  /* 消しゴム */
   .eraser{
     background:#f5f5f5 !important; color:#111 !important;
     border:2px dashed #ef4444 !important;
     background-image: repeating-linear-gradient(45deg, #fff 0 6px, #ffe4e6 6px 12px) !important;
   }
 
+  /* クリア演出 */
   .blink{ animation: blink .12s ease-in-out 3; }
   @keyframes blink{ 0%,100%{filter:none;transform:scale(1);} 50%{filter:brightness(2);transform:scale(1.06);box-shadow:0 0 10px #eab308aa;} }
   .clearing{ animation: popout .22s ease-out forwards; box-shadow: 0 0 10px #fca5a5, 0 0 18px #fdba74; background:#fb923c !important; }
@@ -66,20 +73,20 @@
     visibility:hidden;
   }
 
-  /* ▼矢印パッド（タッチ端末のみ表示） */
+  /* ▼矢印パッド（タッチ端末のみ表示、最大幅でコンパクト） */
   .controls{
     position:fixed; left:50%; transform:translateX(-50%);
     bottom:8px; background:#0b1220e6; backdrop-filter: blur(6px);
     padding:10px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
     border-radius:14px;
-    width: min(520px, 92vw);                 /* デスクトップでも細身 */
+    width: min(520px, 92vw);
     display:grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, var(--btn));
     gap:8px; z-index:999;
   }
   @media (max-height: 720px){
     .controls{ gap:6px; padding:8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   }
-  /* デスクトップでは非表示（Safari/Chrome対策で !important） */
+  /* デスクトップでは非表示（!important で強制） */
   @media (hover:hover) and (pointer:fine){
     .controls{ display:none !important; }
   }
@@ -94,14 +101,21 @@
   #btn-down{ grid-column: 2 / 3; grid-row: 2 / 3; }
   #btn-right{ grid-column: 3 / 4; grid-row: 2 / 3; }
 
+  /* PC向けヒントはデフォ隠し→デスクトップのみ表示 */
+  .only-desktop{ display:none; }
+  @media (hover:hover) and (pointer:fine){ .only-desktop{ display:inline-block; } }
+
   #clearedPanel{
     margin-top:10px; padding:8px; border:2px solid #38bdf8; background:#0b1220;
     max-width:min(96vw, 560px); width:100%; border-radius:12px;
   }
   #clearedPanel h2{ margin:0 0 6px; font-size:14px; font-weight:800; color:#cde9ff; }
   #clearedList{ display:flex; gap:6px; flex-wrap:wrap; max-height:100px; overflow:auto; }
-
-  .primeTag{ background:#0ea5e9; color:#002233; font-weight:900; border-radius:999px; padding:4px 10px; font-size:14px; box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center; }
+  .primeTag{
+    background:#0ea5e9; color:#002233; font-weight:900;
+    border-radius:999px; padding:4px 10px; font-size:14px;
+    box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center;
+  }
 
   #toastArea{
     position:fixed; left:0; right:0; top:60px; display:flex; justify-content:center; gap:8px;
@@ -114,6 +128,7 @@
   }
   @keyframes toastIn{ to{ transform:translateY(0); opacity:1; } }
 
+  /* モーダル */
   #primeModal{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:16px; z-index:9999; }
   #primeModal.show{ display:grid; }
   .modalCard{
@@ -135,13 +150,14 @@
 <div id="topbar">
   <button class="tbtn" id="startToggle">▶︎ スタート</button>
   <button class="tbtn secondary" id="openPrime">📜 素数一覧</button>
+  <button class="tbtn secondary" id="fsToggle">⛶ 全画面</button>
   <span id="chainBadge">Chain x1</span>
 </div>
 
 <div id="info">
   <span>スコア: <strong id="score">0</strong></span>
   <span>ハイスコア: <strong id="hiscore">0</strong></span>
-  <span class="tag" style="margin-left:6px;">PCは←↓↑→で操作</span>
+  <span class="tag only-desktop" style="margin-left:6px;">PCは←↓↑→で操作</span>
 </div>
 
 <div id="game-container"></div>
@@ -220,6 +236,8 @@
   const btnRight = document.getElementById('btn-right');
   const controls = document.getElementById('controls');
 
+  const fsToggle = document.getElementById('fsToggle');
+
   let board, active, timer=null, score=0, highScore=0, busy=false, running=false, wasRunning=false;
   let audioCtx = null;
   let clearedHistory = [];
@@ -234,11 +252,37 @@
     }, {passive:false});
   })();
 
-  // ====== デスクトップ判定でJS側からも非表示（Safariの一部環境対策）======
+  // ====== デスクトップ検出でJS側からも非表示（Safari対策）======
   (function hideControlsOnDesktop(){
     const desktopLike = window.matchMedia('(hover:hover) and (pointer:fine)').matches || (navigator.maxTouchPoints||0) === 0;
     if(desktopLike){ controls.style.display='none'; document.body.style.paddingBottom='10px'; }
   })();
+
+  // ====== Fullscreen API ======
+  function updateFSButton(){
+    const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    fsToggle.textContent = isFS ? '⤢ 画面を戻す' : '⛶ 全画面';
+  }
+  async function enterFS(){
+    const el = document.documentElement;
+    try{
+      if(el.requestFullscreen){ await el.requestFullscreen({ navigationUI:'hide' }); }
+      else if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); }
+    }catch(_){}
+  }
+  async function exitFS(){
+    try{
+      if(document.exitFullscreen){ await document.exitFullscreen(); }
+      else if(document.webkitExitFullscreen){ document.webkitExitFullscreen(); }
+    }catch(_){}
+  }
+  fsToggle.onclick = async ()=>{
+    const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if(isFS) await exitFS(); else await enterFS();
+  };
+  document.addEventListener('fullscreenchange', ()=>{ updateFSButton(); reserveSpace(); });
+  document.addEventListener('webkitfullscreenchange', ()=>{ updateFSButton(); reserveSpace(); });
+  updateFSButton();
 
   // ====== util ======
   function randDigit(){ return Math.floor(Math.random()*9)+1; }
@@ -271,7 +315,7 @@
       o.start();
       g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.16);
       o.stop(audioCtx.currentTime+0.17);
-    }catch(e){}
+    }catch(_){}
   }
   function playEraserSE(){
     try{
@@ -282,7 +326,7 @@
       o.connect(g).connect(audioCtx.destination); o.start();
       g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.12);
       o.stop(audioCtx.currentTime+0.13);
-    }catch(e){}
+    }catch(_){}
   }
 
   // ====== 盤 ======
@@ -320,8 +364,8 @@
     loadHighScore();
     spawn();
     draw();
-    stop();                       // 初期は停止
-    reserveSpace();               // 矢印が出ているときだけ下余白を確保
+    stop();          // 初期は停止
+    reserveSpace();  // 矢印の高さぶん下余白を確保
   }
 
   // ====== ピース ======
@@ -345,6 +389,7 @@
     }
   }
 
+  // 回転・判定
   function rotateCW(mat){
     const h = mat.length, w = mat[0].length;
     const out = Array.from({length:w},()=>Array(h).fill(0));
@@ -579,7 +624,7 @@
     }
   }
 
-  // ====== 豆知識 ======
+  // ====== 豆知識タグ ======
   function isPalindromeStr(s){ return s === [...s].reverse().join(''); }
   function isProbablePrimeMR(n){
     if(n < 2) return false;
@@ -626,7 +671,7 @@
     return tags;
   }
 
-  // ====== 入力（矢印だけ）======
+  // ====== 入力 ======
   document.addEventListener('keydown', (e)=>{
     if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(e.key)) e.preventDefault();
     switch(e.key){
@@ -658,6 +703,7 @@
   holdRepeat(btnLeft, ()=>move(-1));
   holdRepeat(btnRight,()=>move(1));
   holdRepeat(btnDown, ()=>soft());
+  // ↑は単発のまま（回転暴発防止）
 
   // スタート/ポーズ
   startToggleBtn.onclick = ()=>{ ensureAudio(); if(running) stop(); else start(); };
@@ -704,7 +750,7 @@
     sp.className = 'primeTag'; sp.textContent = n.toString(); return sp;
   }
 
-  // ===== 矢印パッド表示時だけ下余白を確保 =====
+  // ===== 矢印パッドの高さ分の余白を自動予約（重なり防止） =====
   function reserveSpace(){
     const visible = getComputedStyle(controls).display !== 'none';
     if(visible){
@@ -718,11 +764,8 @@
   (document.fonts?.ready || Promise.resolve()).then(reserveSpace);
 
   // 起動
-  // 起動
-buildGrid();
-init();
-
+  buildGrid();
+  init();
 </script>
 </body>
 </html>
-
