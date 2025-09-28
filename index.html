@@ -7,15 +7,10 @@
 <style>
   :root{
     --cell: clamp(20px, 6.2vw, 34px);
-    /* ボタン縮小＋高さが低い端末でさらに小型化 */
-    --btn: clamp(44px, 8vw, 52px);
+    --btn: clamp(34px, 6.8vw, 46px); /* さらに小型化 */
   }
-  @media (max-height: 720px){
-    :root{ --btn: clamp(38px, 7.2vw, 46px); }
-  }
-  @media (max-height: 600px){
-    :root{ --btn: clamp(34px, 6.8vw, 42px); }
-  }
+  @media (max-height: 720px){ :root{ --btn: clamp(32px, 6.4vw, 42px); } }
+  @media (max-height: 600px){ :root{ --btn: clamp(30px, 6vw, 38px); } }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body{ height:100svh; overflow:hidden; }
@@ -24,13 +19,12 @@
     background:#0f172a; color:#fff; margin:0; padding:10px;
     display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
     touch-action: manipulation;
+    transition: padding-bottom .15s ease; /* 余白の予約が滑らかに */
   }
   h1{ margin:4px 0 2px; font-size:clamp(18px,5vw,22px); }
   #info{ margin:4px 0 8px; font-size:0.95rem; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 
-  #topbar{
-    display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:6px 0;
-  }
+  #topbar{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:6px 0; }
   .tbtn{
     background:#22d3ee; color:#062029; border:none; padding:8px 12px;
     border-radius:10px; font-weight:900; cursor:pointer; font-size:clamp(14px,3.6vw,16px);
@@ -63,20 +57,9 @@
   }
 
   .blink{ animation: blink .12s ease-in-out 3; }
-  @keyframes blink{
-    0%,100%{ filter:none; transform:scale(1); }
-    50%{ filter:brightness(2); transform:scale(1.06); box-shadow:0 0 10px #eab308aa; }
-  }
-  .clearing{
-    animation: popout .22s ease-out forwards;
-    box-shadow: 0 0 10px #fca5a5, 0 0 18px #fdba74;
-    background:#fb923c !important;
-  }
-  @keyframes popout{
-    0%{ transform: scale(1); opacity:1; }
-    60%{ transform: scale(1.15); opacity:.9; }
-    100%{ transform: scale(0.1); opacity:0; }
-  }
+  @keyframes blink{ 0%,100%{filter:none;transform:scale(1);} 50%{filter:brightness(2);transform:scale(1.06);box-shadow:0 0 10px #eab308aa;} }
+  .clearing{ animation: popout .22s ease-out forwards; box-shadow: 0 0 10px #fca5a5, 0 0 18px #fdba74; background:#fb923c !important; }
+  @keyframes popout{ 0%{transform:scale(1);opacity:1;} 60%{transform:scale(1.15);opacity:.9;} 100%{transform:scale(0.1);opacity:0;} }
 
   #chainBadge{
     display:inline-block; padding:2px 8px; border-radius:999px;
@@ -84,24 +67,27 @@
     visibility:hidden;
   }
 
-  /* ① 安全域を考慮（bottom padding に env(safe-area-inset-bottom) を加算） */
+  /* 矢印パッド：幅を min(100vw-16px, 520px) に制限してデスクトップで細身に */
   .controls{
     position:fixed; left:50%; transform:translateX(-50%);
     bottom:8px; background:#0b1220e6; backdrop-filter: blur(6px);
     padding:10px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    border-radius:14px; width:calc(100vw - 16px);
+    border-radius:14px; width: min(calc(100vw - 16px), 520px);
     display:grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, var(--btn));
     gap:8px; z-index:999;
   }
   @media (max-height: 720px){
     .controls{ gap:6px; padding:8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   }
+  /* デスクトップ（マウス/トラックパッド）では矢印パッドを隠す */
+  @media (hover:hover) and (pointer:fine){
+    .controls{ display:none; }
+  }
 
   .btn{
     background:#38bdf8; color:#05222c; border:none;
-    border-radius:12px; font-weight:900; cursor:pointer; font-size:clamp(16px,4.2vw,18px);
-    box-shadow: 0 6px 18px #00000044;
-    touch-action: manipulation;
+    border-radius:12px; font-weight:900; cursor:pointer; font-size:clamp(14px,3.8vw,16px);
+    box-shadow: 0 6px 18px #00000044; touch-action: manipulation;
   }
   #btn-up{ grid-column: 2 / 3; grid-row: 1 / 2; }
   #btn-left{ grid-column: 1 / 2; grid-row: 2 / 3; }
@@ -113,12 +99,9 @@
     max-width:min(96vw, 560px); width:100%; border-radius:12px;
   }
   #clearedPanel h2{ margin:0 0 6px; font-size:14px; font-weight:800; color:#cde9ff; }
-  #clearedList{
-    display:flex; gap:6px; flex-wrap:wrap; max-height:100px; overflow:auto;
-  }
+  #clearedList{ display:flex; gap:6px; flex-wrap:wrap; max-height:100px; overflow:auto; }
   .primeTag{
-    background:#0ea5e9; color:#002233; font-weight:900;
-    border-radius:999px; padding:4px 10px; font-size:14px;
+    background:#0ea5e9; color:#002233; font-weight:900; border-radius:999px; padding:4px 10px; font-size:14px;
     box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center;
   }
 
@@ -160,12 +143,13 @@
 <div id="info">
   <span>スコア: <strong id="score">0</strong></span>
   <span>ハイスコア: <strong id="hiscore">0</strong></span>
+  <span class="tag" style="margin-left:6px;">PCは←↓↑→で操作</span>
 </div>
 
 <div id="game-container"></div>
 
-<!-- 矢印だけ操作 -->
-<div class="controls">
+<!-- タッチ端末向け矢印 -->
+<div class="controls" id="controls">
   <button class="btn" id="btn-up">↑</button>
   <button class="btn" id="btn-left">←</button>
   <button class="btn" id="btn-down">↓</button>
@@ -197,9 +181,7 @@
       <button class="tbtn secondary" id="resetListBtn">最初から</button>
     </div>
     <div id="primeListBox" class="modalBody"></div>
-    <div class="modalFoot">
-      <button class="tbtn" id="closePrime">閉じる</button>
-    </div>
+    <div class="modalFoot"><button class="tbtn" id="closePrime">閉じる</button></div>
   </div>
 </div>
 
@@ -238,6 +220,8 @@
   const btnDown = document.getElementById('btn-down');
   const btnLeft = document.getElementById('btn-left');
   const btnRight = document.getElementById('btn-right');
+
+  const controls = document.getElementById('controls');
 
   let board, active, timer=null, score=0, highScore=0, busy=false, running=false, wasRunning=false;
   let audioCtx = null;
@@ -334,6 +318,7 @@
     spawn();
     draw();
     stop(); // 初期は停止
+    reserveSpace(); // ← 矢印パッドの高さ分だけ下余白を確保
   }
 
   // ====== ピース ======
@@ -483,49 +468,33 @@
 
   async function animateClear(mask, chain, labels=[]){
     draw(true);
-
-    for(let r=0;r<ROWS;r++){
-      for(let c=0;c<COLS;c++){
-        if(mask[r][c]){
-          const el = document.getElementById(`cell-${r}-${c}`);
-          if(el){ el.classList.add('blink'); }
-        }
-      }
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(mask[r][c]){ const el = document.getElementById(`cell-${r}-${c}`); if(el) el.classList.add('blink'); }
     }
     playClearSE(chain);
     await delay(360);
 
     if(labels.length){
-      labels.slice(0,5).forEach((txt, i)=>{
-        setTimeout(()=> showToast(`${txt}！`, 500), i * 200);
-      });
+      labels.slice(0,5).forEach((txt, i)=> setTimeout(()=> showToast(`${txt}！`, 500), i*200));
     }
 
-    for(let r=0;r<ROWS;r++){
-      for(let c=0;c<COLS;c++){
-        if(mask[r][c]){
-          const el = document.getElementById(`cell-${r}-${c}`);
-          if(el){ el.classList.remove('blink'); el.classList.add('clearing'); }
-        }
-      }
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(mask[r][c]){ const el = document.getElementById(`cell-${r}-${c}`); if(el){ el.classList.remove('blink'); el.classList.add('clearing'); } }
     }
     await delay(230);
   }
   function showToast(text, ms=500){
     const d = document.createElement('div');
-    d.className = 'toast';
-    d.textContent = text;
+    d.className = 'toast'; d.textContent = text;
     toastArea.appendChild(d);
-    setTimeout(()=>{ d.remove(); }, ms);
+    setTimeout(()=> d.remove(), ms);
   }
 
   function applyGravity(){
     for(let c=0;c<COLS;c++){
       const stack = [];
       for(let r=ROWS-1;r>=0;r--) if(board[r][c]!==0) stack.push(board[r][c]);
-      for(let r=ROWS-1;r>=0;r--){
-        board[r][c] = stack[ROWS-1-r] ?? 0;
-      }
+      for(let r=ROWS-1;r>=0;r--) board[r][c] = stack[ROWS-1-r] ?? 0;
     }
   }
 
@@ -669,37 +638,26 @@
   btnDown.onclick = ()=>soft();
   btnUp.onclick   = ()=>rotate();
 
-  // ② 長押しでオートリピート（←→↓）
+  // 長押しオートリピート（←→↓）
   function holdRepeat(element, onFire, firstDelay=330, repeat=200){
     let t1=null, t2=null;
     const start = (e)=>{
       e.preventDefault();
-      onFire(); // 1回目
+      onFire();
       clearTimeout(t1); clearInterval(t2);
-      t1 = setTimeout(()=>{
-        onFire();
-        t2 = setInterval(onFire, repeat);
-      }, firstDelay);
+      t1 = setTimeout(()=>{ onFire(); t2 = setInterval(onFire, repeat); }, firstDelay);
     };
-    const end = ()=>{
-      clearTimeout(t1); clearInterval(t2); t1=null; t2=null;
-    };
+    const end = ()=>{ clearTimeout(t1); clearInterval(t2); t1=null; t2=null; };
     element.addEventListener('touchstart', start, {passive:false});
     element.addEventListener('mousedown',   start);
-    ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>{
-      element.addEventListener(ev, end);
-    });
+    ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=> element.addEventListener(ev, end));
   }
   holdRepeat(btnLeft, ()=>move(-1));
   holdRepeat(btnRight,()=>move(1));
   holdRepeat(btnDown, ()=>soft());
-  // ↑は単発のまま（回転暴発防止）
 
-  // スタート/ポーズ（③ 二重定義を解消、既存start/stopを使用）
-  startToggleBtn.onclick = ()=>{
-    ensureAudio();
-    if(running) stop(); else start();
-  };
+  // スタート/ポーズ
+  startToggleBtn.onclick = ()=>{ ensureAudio(); if(running) stop(); else start(); };
 
   // ===== 素数一覧 =====
   let primeCursor = {};
@@ -742,6 +700,19 @@
     const sp = document.createElement('span');
     sp.className = 'primeTag'; sp.textContent = n.toString(); return sp;
   }
+
+  // ===== 矢印パッドの高さ分の余白を自動予約（重なり防止） =====
+  function reserveSpace(){
+    const visible = getComputedStyle(controls).display !== 'none';
+    if(visible){
+      requestAnimationFrame(()=>{ document.body.style.paddingBottom = (controls.offsetHeight + 12) + 'px'; });
+    }else{
+      document.body.style.paddingBottom = '10px';
+    }
+  }
+  window.addEventListener('resize', reserveSpace);
+  window.addEventListener('orientationchange', reserveSpace);
+  (document.fonts?.ready || Promise.resolve()).then(reserveSpace);
 
   // 起動
   buildGrid(); init();
