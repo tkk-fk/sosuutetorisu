@@ -3,33 +3,44 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1.0,user-scalable=no" />
-<title>素数テトリス（ポップアップ豆知識＋不具合修正）</title>
+<title>素数テトリス（モバイル最適／矢印だけ操作）</title>
 <style>
   :root{
-    --cell: clamp(22px, 7vw, 36px);
-    --btn: clamp(40px, 7.5vw, 46px);
+    --cell: clamp(20px, 6.2vw, 34px);
+    /* ボタン縮小＋高さが低い端末でさらに小型化 */
+    --btn: clamp(44px, 8vw, 52px);
   }
+  @media (max-height: 720px){
+    :root{ --btn: clamp(38px, 7.2vw, 46px); }
+  }
+  @media (max-height: 600px){
+    :root{ --btn: clamp(34px, 6.8vw, 42px); }
+  }
+
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body{ height:100svh; overflow:hidden; }
   body{
     font-family: system-ui, -apple-system, "BIZ UDGothic", Arial, sans-serif;
-    background:#0f172a; color:#fff; margin:0; padding:12px;
-    display:flex; flex-direction:column; align-items:center;
+    background:#0f172a; color:#fff; margin:0; padding:10px;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    touch-action: manipulation;
   }
-  h1{ margin:6px 0 2px; font-size:clamp(18px,5vw,24px); }
-  #info{ margin:6px 0 10px; font-size:1rem; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  h1{ margin:4px 0 2px; font-size:clamp(18px,5vw,22px); }
+  #info{ margin:4px 0 8px; font-size:0.95rem; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 
   #topbar{
-    display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:8px 0;
+    display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:6px 0;
   }
   .tbtn{
     background:#22d3ee; color:#062029; border:none; padding:8px 12px;
     border-radius:10px; font-weight:900; cursor:pointer; font-size:clamp(14px,3.6vw,16px);
     box-shadow: 0 4px 14px #00000040;
+    touch-action: manipulation;
   }
   .tbtn.secondary{ background:#334155; color:#d7e5ff; }
 
   #game-container{
-    border:4px solid #38bdf8; background:#000; display:inline-block; margin-top:6px;
+    border:4px solid #38bdf8; background:#000; display:inline-block; margin-top:4px;
     box-shadow: 0 12px 32px #00000055; border-radius:12px; overflow:hidden;
   }
   .row{ display:flex; }
@@ -38,7 +49,6 @@
     justify-content:center; align-items:center; font-weight:800; font-size:calc(var(--cell) * 0.6);
     user-select:none; transform-origin:center; color:#fff; background:#334155;
   }
-  /* 数字色 */
   .cell.d1{ background:#3b82f6; }  .cell.d2{ background:#10b981; }  .cell.d3{ background:#ef4444; }
   .cell.d4{ background:#f59e0b; }  .cell.d5{ background:#a855f7; }  .cell.d6{ background:#14b8a6; }
   .cell.d7{ background:#ec4899; }  .cell.d8{ background:#6366f1; }  .cell.d9{ background:#f97316; }
@@ -46,14 +56,12 @@
   .active{ outline:2px solid #ffffffaa; }
   .fixed{ outline:1px solid #00000040; }
 
-  /* 消しゴム（"消"） */
   .eraser{
     background:#f5f5f5 !important; color:#111 !important;
     border:2px dashed #ef4444 !important;
     background-image: repeating-linear-gradient(45deg, #fff 0 6px, #ffe4e6 6px 12px) !important;
   }
 
-  /* 消去アニメ：点滅→ポップアウト */
   .blink{ animation: blink .12s ease-in-out 3; }
   @keyframes blink{
     0%,100%{ filter:none; transform:scale(1); }
@@ -70,34 +78,43 @@
     100%{ transform: scale(0.1); opacity:0; }
   }
 
-  /* 連鎖バッジ */
   #chainBadge{
     display:inline-block; padding:2px 8px; border-radius:999px;
     background:#22c55e; color:#04210f; font-weight:900; font-size:0.9rem; min-width:64px; text-align:center;
     visibility:hidden;
   }
 
-  /* 操作パッド（PC:上部、SP:下部固定） */
+  /* ① 安全域を考慮（bottom padding に env(safe-area-inset-bottom) を加算） */
   .controls{
-    margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:8px; background:#0b1220e6; backdrop-filter: blur(6px);
+    padding:10px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    border-radius:14px; width:calc(100vw - 16px);
+    display:grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, var(--btn));
+    gap:8px; z-index:999;
   }
-  .btn{
-    min-width:70px; height:var(--btn);
-    background:#38bdf8; color:#05222c; border:none; padding:8px 12px;
-    border-radius:12px; font-weight:900; cursor:pointer; font-size:clamp(14px,3.8vw,16px);
-    box-shadow: 0 6px 18px #00000044;
+  @media (max-height: 720px){
+    .controls{ gap:6px; padding:8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   }
-  .btn.gray{ background:#334155; color:#e2e8f0; }
-  .btn.red{ background:#fb7185; color:#2b0c12; }
 
-  /* 消えた素数の履歴（数値だけをバッジ表示） */
+  .btn{
+    background:#38bdf8; color:#05222c; border:none;
+    border-radius:12px; font-weight:900; cursor:pointer; font-size:clamp(16px,4.2vw,18px);
+    box-shadow: 0 6px 18px #00000044;
+    touch-action: manipulation;
+  }
+  #btn-up{ grid-column: 2 / 3; grid-row: 1 / 2; }
+  #btn-left{ grid-column: 1 / 2; grid-row: 2 / 3; }
+  #btn-down{ grid-column: 2 / 3; grid-row: 2 / 3; }
+  #btn-right{ grid-column: 3 / 4; grid-row: 2 / 3; }
+
   #clearedPanel{
-    margin-top:12px; padding:10px; border:2px solid #38bdf8; background:#0b1220;
+    margin-top:10px; padding:8px; border:2px solid #38bdf8; background:#0b1220;
     max-width:min(96vw, 560px); width:100%; border-radius:12px;
   }
-  #clearedPanel h2{ margin:0 0 8px; font-size:14px; font-weight:800; color:#cde9ff; }
+  #clearedPanel h2{ margin:0 0 6px; font-size:14px; font-weight:800; color:#cde9ff; }
   #clearedList{
-    display:flex; gap:6px; flex-wrap:wrap; max-height:140px; overflow:auto;
+    display:flex; gap:6px; flex-wrap:wrap; max-height:100px; overflow:auto;
   }
   .primeTag{
     background:#0ea5e9; color:#002233; font-weight:900;
@@ -105,7 +122,17 @@
     box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center;
   }
 
-  /* 素数一覧モーダル（既存） */
+  #toastArea{
+    position:fixed; left:0; right:0; top:60px; display:flex; justify-content:center; gap:8px;
+    pointer-events:none; z-index:9999;
+  }
+  .toast{
+    background:#22c55e; color:#052a13; font-weight:900; font-size:14px;
+    padding:6px 10px; border-radius:999px; box-shadow:0 6px 18px #00000055;
+    transform:translateY(-8px); opacity:0; animation: toastIn .12s ease-out forwards;
+  }
+  @keyframes toastIn{ to{ transform:translateY(0); opacity:1; } }
+
   #primeModal{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:16px; z-index:9999; }
   #primeModal.show{ display:grid; }
   .modalCard{
@@ -118,33 +145,6 @@
   .modalBody{ padding:10px; overflow:auto; display:flex; flex-wrap:wrap; gap:6px; }
   .modalFoot{ padding:10px; border-top:1px solid #1f2a44; display:flex; gap:8px; justify-content:flex-end; }
   .tag{ background:#1f2937; color:#cde9ff; border-radius:999px; padding:4px 10px; font-weight:800; }
-
-  /* モバイル：操作パッド下部固定 */
-  @media (max-width: 680px){
-    .controls{
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:8px; background:#0b1220e6; backdrop-filter: blur(6px);
-      padding:8px; border-radius:14px; width:calc(100vw - 16px);
-      display:grid; grid-template-columns: repeat(5, 1fr); gap:6px;
-      z-index:999;
-    }
-    #game-container{ margin-bottom:calc(var(--btn) * 2 + 28px); }
-    .btn{ min-width:unset; }
-  }
-
-  /* ポップアップ（豆知識） */
-  #toastArea{
-    position:fixed; left:0; right:0; top:64px; display:flex; justify-content:center; gap:8px;
-    pointer-events:none; z-index:9999;
-  }
-  .toast{
-    background:#22c55e; color:#052a13; font-weight:900; font-size:14px;
-    padding:6px 10px; border-radius:999px; box-shadow:0 6px 18px #00000055;
-    transform:translateY(-8px); opacity:0; animation: toastIn .12s ease-out forwards;
-  }
-  @keyframes toastIn{
-    to{ transform:translateY(0); opacity:1; }
-  }
 </style>
 </head>
 <body>
@@ -164,14 +164,12 @@
 
 <div id="game-container"></div>
 
-<div class="controls" id="controls">
-  <button class="btn gray" id="left">◀︎</button>
-  <button class="btn gray" id="down">⤵︎</button>
-  <button class="btn gray" id="right">▶︎</button>
-  <button class="btn" id="rotL">⟲</button>
-  <button class="btn" id="rotR">⟳</button>
-  <button class="btn" id="hard">⏬</button>
-  <button class="btn red" id="reset">⟲ リセット</button>
+<!-- 矢印だけ操作 -->
+<div class="controls">
+  <button class="btn" id="btn-up">↑</button>
+  <button class="btn" id="btn-left">←</button>
+  <button class="btn" id="btn-down">↓</button>
+  <button class="btn" id="btn-right">→</button>
 </div>
 
 <div id="clearedPanel">
@@ -179,10 +177,9 @@
   <div id="clearedList" aria-live="polite"></div>
 </div>
 
-<!-- ポップアップ表示領域 -->
 <div id="toastArea" aria-live="polite"></div>
 
-<!-- 素数一覧モーダル（省略説明：既存機能） -->
+<!-- 素数一覧モーダル -->
 <div id="primeModal" role="dialog" aria-modal="true" aria-labelledby="primeTitle">
   <div class="modalCard">
     <div class="modalHead">
@@ -208,7 +205,8 @@
 
 <script>
   // ====== 設定 ======
-  const ROWS = 20, COLS = 10, TICK = 550;
+  let ROWS = window.matchMedia('(max-width: 680px)').matches ? 16 : 20;
+  const COLS = 10, TICK = 550;
   const SCORE_CELL = 50, SCORE_GROUP = 100;
 
   const ERASER = -1, ERASER_RATE = 0.10, ERASER_RADIUS = 1, ERASER_FACE = '消';
@@ -236,11 +234,26 @@
   const batchSel = document.getElementById('batchSel');
   const primeListBox = document.getElementById('primeListBox');
 
+  const btnUp = document.getElementById('btn-up');
+  const btnDown = document.getElementById('btn-down');
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+
   let board, active, timer=null, score=0, highScore=0, busy=false, running=false, wasRunning=false;
   let audioCtx = null;
-  let clearedHistory = []; // 純粋に数だけ
+  let clearedHistory = [];
 
-  // ====== 基本ユーティリティ ======
+  // ====== 画面ズーム抑止（ダブルタップ）======
+  (function preventDoubleTapZoom(){
+    let last = 0;
+    document.addEventListener('touchend', (e)=>{
+      const now = Date.now();
+      if(now - last < 300){ e.preventDefault(); }
+      last = now;
+    }, {passive:false});
+  })();
+
+  // ====== util ======
   function randDigit(){ return Math.floor(Math.random()*9)+1; }
   function isPrime(n){
     if(n<=1) return false;
@@ -253,7 +266,7 @@
   }
   const delay = ms => new Promise(res=>setTimeout(res, ms));
 
-  // ====== オーディオ ======
+  // ====== audio ======
   function ensureAudio(){
     audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
     if(audioCtx.state==='suspended') audioCtx.resume();
@@ -285,7 +298,7 @@
     }catch(e){}
   }
 
-  // ====== 盤・初期化 ======
+  // ====== 盤 ======
   function buildGrid(){
     container.innerHTML = '';
     for(let r=0;r<ROWS;r++){
@@ -323,7 +336,7 @@
     stop(); // 初期は停止
   }
 
-  // ====== ピース生成 ======
+  // ====== ピース ======
   function randomPiece(){
     if(Math.random() < ERASER_RATE){
       return { type:'eraser', cells:[[ERASER]] };
@@ -344,17 +357,10 @@
     }
   }
 
-  // ====== 変換/判定 ======
   function rotateCW(mat){
     const h = mat.length, w = mat[0].length;
     const out = Array.from({length:w},()=>Array(h).fill(0));
     for(let r=0;r<h;r++) for(let c=0;c<w;c++) out[c][h-1-r] = mat[r][c];
-    return out;
-  }
-  function rotateCCW(mat){
-    const h = mat.length, w = mat[0].length;
-    const out = Array.from({length:w},()=>Array(h).fill(0));
-    for(let r=0;r<h;r++) for(let c=0;c<w;c++) out[w-1-c][r] = mat[r][c];
     return out;
   }
   function canPlace(px, py, cells){
@@ -370,9 +376,8 @@
     return true;
   }
 
-  // ====== ロック＆連鎖（★再開バグ修正あり） ======
+  // ====== ロック＆連鎖 ======
   async function lock(){
-    // 固定（数字のみ）。消しゴムは効果だけ。
     const erasers = [];
     const h = active.cells.length, w = active.cells[0].length;
     for(let r=0;r<h;r++){
@@ -389,24 +394,21 @@
       playEraserSE(); draw(true); await delay(40);
     }
 
-    // 連鎖：現在の稼働状態を保持→停止（★ここが修正点）
     const resumeAfter = running;
     stop(); busy = true;
     let chain = 0;
 
     while(true){
-      const res = computeClearMask(); // {mask,cellsCleared,groups,primes}
+      const res = computeClearMask();
       if(res.cellsCleared === 0) break;
       chain++;
       chainBadge.textContent = `Chain x${chain}`;
       chainBadge.style.visibility = 'visible';
 
-      // ★分類タグ（回文/エミルプ/双子/ソフィーG/セーフ）を集約（重複除去）
       const tagSet = new Set();
       for(const n of res.primes){ classifyPrime(n).forEach(t=>tagSet.add(t)); }
-      await animateClear(res.mask, chain, Array.from(tagSet)); // 点滅→消滅＋ポップアップ
+      await animateClear(res.mask, chain, Array.from(tagSet));
 
-      // 反映
       let cleared = 0;
       for(let r=0;r<ROWS;r++){
         for(let c=0;c<COLS;c++){
@@ -417,7 +419,6 @@
       scoreEl.textContent = score;
       updateHighScore();
 
-      // 履歴は数値のみを保存
       if(res.primes.length){
         clearedHistory = [...res.primes, ...clearedHistory].slice(0, 60);
         renderCleared();
@@ -430,7 +431,7 @@
     chainBadge.style.visibility = 'hidden';
     busy = false;
     spawn();
-    if(resumeAfter) start(); // ★連鎖前に動いていたら再開
+    if(resumeAfter) start();
   }
 
   function eraseArea(cx, cy){
@@ -444,7 +445,6 @@
     }
   }
 
-  // ラン全体が素数 + 1桁素数(2,3,5,7)
   function computeClearMask(){
     const mask = Array.from({length:ROWS}, ()=>Array(COLS).fill(false));
     let groups = 0, cellsCleared = 0, primes = [];
@@ -481,11 +481,9 @@
     return {mask, cellsCleared, groups, primes};
   }
 
-  // ====== 点滅→消滅＋ポップアップ（0.1秒） ======
   async function animateClear(mask, chain, labels=[]){
     draw(true);
 
-    // 点滅
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
         if(mask[r][c]){
@@ -495,16 +493,14 @@
       }
     }
     playClearSE(chain);
-    await delay(360); // 0.12s * 3
+    await delay(360);
 
-    // ★豆知識ポップアップ（0.1s、複数あれば順に少しずらして表示）
     if(labels.length){
       labels.slice(0,5).forEach((txt, i)=>{
-        setTimeout(()=>showToast(`${txt}！`, 110), i*120);
+        setTimeout(()=> showToast(`${txt}！`, 500), i * 200);
       });
     }
 
-    // 消滅
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
         if(mask[r][c]){
@@ -515,8 +511,7 @@
     }
     await delay(230);
   }
-
-  function showToast(text, ms=110){
+  function showToast(text, ms=500){
     const d = document.createElement('div');
     d.className = 'toast';
     d.textContent = text;
@@ -524,7 +519,6 @@
     setTimeout(()=>{ d.remove(); }, ms);
   }
 
-  // 重力
   function applyGravity(){
     for(let c=0;c<COLS;c++){
       const stack = [];
@@ -535,7 +529,7 @@
     }
   }
 
-  // ====== 描画・入力 ======
+  // ====== 進行・描画 ======
   function step(){
     if(busy || !running) return;
     if(canPlace(active.x, active.y+1, active.cells)) active.y++;
@@ -556,10 +550,16 @@
     else lock();
     draw();
   }
-  function hard(){
+  function rotate(){
     if(busy || !running) return;
-    while(canPlace(active.x, active.y+1, active.cells)) active.y++;
-    lock();
+    if(active.type==='eraser') return;
+    const rotated = rotateCW(active.cells);
+    const kicks = [[0,0],[1,0],[-1,0],[2,0],[-2,0]];
+    for(const [dx,dy] of kicks){
+      if(canPlace(active.x+dx, active.y+dy, rotated)){
+        active.cells = rotated; active.x += dx; active.y += dy; draw(); return;
+      }
+    }
   }
 
   function renderCleared(){
@@ -607,7 +607,7 @@
     }
   }
 
-  // 豆知識の判定
+  // ====== 豆知識 ======
   function isPalindromeStr(s){ return s === [...s].reverse().join(''); }
   function isProbablePrimeMR(n){
     if(n < 2) return false;
@@ -654,38 +654,54 @@
     return tags;
   }
 
-  // 入力
+  // ====== 入力（矢印だけ）======
   document.addEventListener('keydown', (e)=>{
-    if(['ArrowLeft','ArrowRight','ArrowDown',' ','ArrowUp','x','X','z','Z'].includes(e.key)) e.preventDefault();
+    if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(e.key)) e.preventDefault();
     switch(e.key){
       case 'ArrowLeft': move(-1); break;
       case 'ArrowRight': move(1); break;
       case 'ArrowDown': soft(); break;
-      case ' ': hard(); break;
-      case 'ArrowUp':
-      case 'x': case 'X': if(!busy) tryRotate(1); break;
-      case 'z': case 'Z': if(!busy) tryRotate(-1); break;
-      case 'r': case 'R': stop(); init(); break;
+      case 'ArrowUp': rotate(); break; // ↑＝回転
     }
   });
+  btnLeft.onclick = ()=>move(-1);
+  btnRight.onclick= ()=>move(1);
+  btnDown.onclick = ()=>soft();
+  btnUp.onclick   = ()=>rotate();
 
-  document.getElementById('left').onclick = ()=>move(-1);
-  document.getElementById('right').onclick= ()=>move(1);
-  document.getElementById('down').onclick = soft;
-  document.getElementById('hard').onclick = hard;
-  document.getElementById('rotR').onclick = ()=>{ if(!busy) tryRotate(1); };
-  document.getElementById('rotL').onclick = ()=>{ if(!busy) tryRotate(-1); };
-  document.getElementById('reset').onclick= ()=>{ stop(); init(); };
+  // ② 長押しでオートリピート（←→↓）
+  function holdRepeat(element, onFire, firstDelay=330, repeat=200){
+    let t1=null, t2=null;
+    const start = (e)=>{
+      e.preventDefault();
+      onFire(); // 1回目
+      clearTimeout(t1); clearInterval(t2);
+      t1 = setTimeout(()=>{
+        onFire();
+        t2 = setInterval(onFire, repeat);
+      }, firstDelay);
+    };
+    const end = ()=>{
+      clearTimeout(t1); clearInterval(t2); t1=null; t2=null;
+    };
+    element.addEventListener('touchstart', start, {passive:false});
+    element.addEventListener('mousedown',   start);
+    ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>{
+      element.addEventListener(ev, end);
+    });
+  }
+  holdRepeat(btnLeft, ()=>move(-1));
+  holdRepeat(btnRight,()=>move(1));
+  holdRepeat(btnDown, ()=>soft());
+  // ↑は単発のまま（回転暴発防止）
 
-  // スタート/ポーズ
-  function start(){ stop(); timer=setInterval(step, TICK); running=true; startToggleBtn.textContent='⏸ ポーズ'; }
-  function stop(){ if(timer){ clearInterval(timer); timer=null; } running=false; startToggleBtn.textContent='▶︎ スタート'; }
+  // スタート/ポーズ（③ 二重定義を解消、既存start/stopを使用）
   startToggleBtn.onclick = ()=>{
     ensureAudio();
     if(running) stop(); else start();
   };
 
-  // ===== 素数一覧（既存） =====
+  // ===== 素数一覧 =====
   let primeCursor = {};
   openPrimeBtn.onclick = ()=>{
     wasRunning = running; stop();
@@ -725,18 +741,6 @@
   function makePrimeTag(n){
     const sp = document.createElement('span');
     sp.className = 'primeTag'; sp.textContent = n.toString(); return sp;
-  }
-
-  // 回転（壁蹴り）
-  function tryRotate(dir=1){
-    if(busy || active.type==='eraser') return;
-    const rotated = dir===1 ? rotateCW(active.cells) : rotateCCW(active.cells);
-    const kicks = [[0,0],[1,0],[-1,0],[2,0],[-2,0]];
-    for(const [dx,dy] of kicks){
-      if(canPlace(active.x+dx, active.y+dy, rotated)){
-        active.cells = rotated; active.x += dx; active.y += dy; draw(); return;
-      }
-    }
   }
 
   // 起動
