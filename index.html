@@ -5,16 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1.0,user-scalable=no" />
 <title>素数テトリス（モバイル最適／ジェスチャー操作）</title>
 <style>
-  :root{
-    /* 盤面を大きく：ボタン削除ぶんセルを拡大 */
-    --cell: clamp(22px, 6.6vw, 38px);
-  }
+  :root{ --cell: clamp(22px, 6.6vw, 38px); }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body{ height:100svh; overflow:hidden; }
-  @supports (height: 100dvh){
-    html, body{ height:100dvh; }
-  }
+  @supports (height: 100dvh){ html, body{ height:100dvh; } }
   html, html:fullscreen, body{ background:#0f172a; }
 
   body{
@@ -94,9 +89,9 @@
   }
   @keyframes toastIn{ to{ transform:translateY(0); opacity:1; } }
 
-  /* モーダル */
-  #primeModal{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:16px; z-index:9999; }
-  #primeModal.show{ display:grid; }
+  /* モーダル共通 */
+  .modalRoot{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; place-items:center; padding:16px; z-index:9999; }
+  .modalRoot.show{ display:grid; }
   .modalCard{
     width:min(96vw, 720px); max-height:86vh; overflow:hidden;
     background:#0b1220; border:2px solid #38bdf8; border-radius:16px; box-shadow:0 20px 60px #000000aa;
@@ -106,6 +101,10 @@
   .modalBody{ padding:10px; overflow:auto; display:flex; flex-wrap:wrap; gap:6px; }
   .modalFoot{ padding:10px; border-top:1px solid #1f2a44; display:flex; gap:8px; justify-content:flex-end; }
   .tag{ background:#1f2937; color:#cde9ff; border-radius:999px; padding:4px 10px; font-weight:800; }
+  .tipsList{ display:grid; gap:8px; width:100%; }
+  .tipItem{ background:#111827; border:1px solid #1f2a44; border-radius:10px; padding:10px; }
+  .tipTitle{ font-weight:900; color:#93c5fd; margin:0 0 6px; }
+  .tipDesc{ margin:0; color:#e5efff; line-height:1.6; font-size:14px; }
 </style>
 </head>
 <body>
@@ -115,6 +114,9 @@
 <div id="topbar">
   <button class="tbtn" id="startToggle">▶︎ スタート</button>
   <button class="tbtn secondary" id="openPrime">📜 素数一覧</button>
+  <!-- 追加：豆知識 -->
+  <button class="tbtn secondary" id="openTips">💡 豆知識</button>
+
   <span id="chainBadge">Chain x1</span>
 </div>
 
@@ -123,7 +125,7 @@
   <span>ハイスコア: <strong id="hiscore">0</strong></span>
 </div>
 
-<!-- ここがジェスチャー領域（スワイプ＆タップ） -->
+<!-- ジェスチャー領域 -->
 <div id="game-container" aria-label="ゲーム盤面"></div>
 
 <div id="clearedPanel">
@@ -134,7 +136,7 @@
 <div id="toastArea" aria-live="polite"></div>
 
 <!-- 素数一覧モーダル -->
-<div id="primeModal" role="dialog" aria-modal="true" aria-labelledby="primeTitle">
+<div id="primeModal" class="modalRoot" role="dialog" aria-modal="true" aria-labelledby="primeTitle">
   <div class="modalCard">
     <div class="modalHead">
       <h3 id="primeTitle">素数一覧（最大10桁）</h3>
@@ -155,9 +157,47 @@
   </div>
 </div>
 
+<!-- 豆知識モーダル -->
+<div id="tipsModal" class="modalRoot" role="dialog" aria-modal="true" aria-labelledby="tipsTitle">
+  <div class="modalCard">
+    <div class="modalHead">
+      <h3 id="tipsTitle">豆知識（素数の分類）</h3>
+    </div>
+    <div class="modalBody">
+      <div class="tipsList">
+        <div class="tipItem">
+          <h4 class="tipTitle">回文素数</h4>
+          <p class="tipDesc">前から読んでも後ろから読んでも同じ数字になる素数。例: 2, 3, 5, 7, 11, 101 など。</p>
+        </div>
+        <div class="tipItem">
+          <h4 class="tipTitle">エマープ（Emirp）</h4>
+          <p class="tipDesc">数字を逆順にした数も<strong>別の</strong>素数になるもの。例: 13→31, 17→71。回文素数は除く（逆にして同じなので）。</p>
+        </div>
+        <div class="tipItem">
+          <h4 class="tipTitle">双子素数</h4>
+          <p class="tipDesc">差が2の素数ペアの一方（n と n±2 が両方素数）。例: (3,5), (11,13)。</p>
+        </div>
+        <div class="tipItem">
+          <h4 class="tipTitle">ソフィー・ジェルマン素数</h4>
+          <p class="tipDesc">p が素数で、2p+1 も素数になるもの（2p+1 は安全素数）。</p>
+        </div>
+        <div class="tipItem">
+          <h4 class="tipTitle">セーフ素数</h4>
+          <p class="tipDesc">q が素数で、(q−1)/2 も素数になるもの。ソフィー・ジェルマン素数の相棒。</p>
+        </div>
+        <div class="tipItem">
+          <h4 class="tipTitle">1桁素数</h4>
+          <p class="tipDesc">1桁の素数（2,3,5,7）。ゲーム内タグ表示用。</p>
+        </div>
+      </div>
+    </div>
+    <div class="modalFoot"><button class="tbtn" id="closeTips">閉じる</button></div>
+  </div>
+</div>
+
 <script>
   // ====== 設定 ======
-  let ROWS = window.matchMedia('(max-width: 680px)').matches ? 14 : 14; // 盤面を少し縦に広げた
+  let ROWS = 12; // ★ 14 → 12 に変更
   const COLS = 10, TICK = 550;
   const SCORE_CELL = 50, SCORE_GROUP = 100;
 
@@ -185,6 +225,11 @@
   const digitSel = document.getElementById('digitSel');
   const batchSel = document.getElementById('batchSel');
   const primeListBox = document.getElementById('primeListBox');
+
+  // 豆知識
+  const tipsModal = document.getElementById('tipsModal');
+  const openTipsBtn = document.getElementById('openTips');
+  const closeTipsBtn = document.getElementById('closeTips');
 
   let board, active, timer=null, score=0, highScore=0, busy=false, running=false, wasRunning=false;
   let audioCtx = null;
@@ -539,7 +584,7 @@
     }
   }
 
-  // ====== 豆知識 ======
+  // ====== 豆知識タグ抽出（表示名も修正：エマープ） ======
   function isPalindromeStr(s){ return s === [...s].reverse().join(''); }
   function isProbablePrimeMR(n){
     if(n < 2) return false;
@@ -578,7 +623,7 @@
     const s = String(n);
     if(isPalindromeStr(s)) tags.push('回文');
     const rev = Number([...s].reverse().join(''));
-    if(rev !== n && isProbablePrimeMR(rev)) tags.push('エミルプ');
+    if(rev !== n && isProbablePrimeMR(rev)) tags.push('エマープ'); // ← 表示名変更
     if(isProbablePrimeMR(n-2) || isProbablePrimeMR(n+2)) tags.push('双子');
     if(isProbablePrimeMR(2*n + 1)) tags.push('ソフィーG');
     if(n % 2 === 1 && isProbablePrimeMR((n-1)/2)) tags.push('セーフ');
@@ -600,10 +645,7 @@
   // ---- ジェスチャー（盤面全体） ----
   (function setupGestures(el){
     let sx=0, sy=0, ex=0, ey=0, t0=0, moved=false;
-
-    const TH_SWIPE = 24;  // スワイプ判定の最小移動量(px)
-    const TH_TAP = 12;    // タップ判定（移動量）
-    const TAP_TIME = 280; // タップ判定（最大時間ms）
+    const TH_SWIPE = 24, TH_TAP = 12, TAP_TIME = 280;
 
     el.addEventListener('touchstart', (e)=>{
       const t = e.changedTouches[0];
@@ -614,30 +656,17 @@
       const t = e.changedTouches[0];
       ex = t.clientX; ey = t.clientY;
       if(Math.abs(ex-sx) > 2 || Math.abs(ey-sy) > 2) moved=true;
-      // ゲーム面はスクロール不要なので抑制
-      e.preventDefault();
+      e.preventDefault(); // スクロール抑制
     }, {passive:false});
 
-    el.addEventListener('touchend', (e)=>{
+    el.addEventListener('touchend', ()=>{
       const dx = ex - sx, dy = ey - sy;
       const adx = Math.abs(dx), ady = Math.abs(dy);
       const dt = Date.now() - t0;
 
-      // スワイプ優先（左右移動）
-      if(adx > TH_SWIPE && adx > ady){
-        if(dx < 0) move(-1);
-        else move(1);
-        return;
-      }
-      // おまけ：下スワイプでソフトドロップ
-      if(ady > TH_SWIPE && ady > adx && dy > 0){
-        soft();
-        return;
-      }
-      // タップ判定：回転
-      if(adx < TH_TAP && ady < TH_TAP && dt < TAP_TIME){
-        rotate();
-      }
+      if(adx > TH_SWIPE && adx > ady){ dx < 0 ? move(-1) : move(1); return; }
+      if(ady > TH_SWIPE && ady > adx && dy > 0){ soft(); return; }
+      if(adx < TH_TAP && ady < TH_TAP && dt < TAP_TIME){ rotate(); }
     }, {passive:true});
   })(container);
 
@@ -686,11 +715,21 @@
     sp.className = 'primeTag'; sp.textContent = n.toString(); return sp;
   }
 
+  // ===== 豆知識モーダル =====
+  openTipsBtn.onclick = ()=>{
+    wasRunning = running; stop();
+    tipsModal.classList.add('show');
+  };
+  closeTipsBtn.onclick = ()=>{
+    tipsModal.classList.remove('show');
+    if(wasRunning) start();
+  };
+
   // 起動
   buildGrid();
   init();
-
 </script>
 </body>
 </html>
+
 
