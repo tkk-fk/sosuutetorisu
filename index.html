@@ -7,10 +7,10 @@
 <style>
   :root{
     --cell: clamp(20px, 6.2vw, 34px);
-    --btn: clamp(34px, 6.8vw, 46px); /* さらに小型化 */
+    --btn: clamp(30px, 6vw, 38px);  /* さらに小型化 */
   }
-  @media (max-height: 720px){ :root{ --btn: clamp(32px, 6.4vw, 42px); } }
-  @media (max-height: 600px){ :root{ --btn: clamp(30px, 6vw, 38px); } }
+  @media (max-height: 720px){ :root{ --btn: clamp(28px, 5.6vw, 36px); } }
+  @media (max-height: 600px){ :root{ --btn: clamp(26px, 5.2vw, 34px); } }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body{ height:100svh; overflow:hidden; }
@@ -19,7 +19,7 @@
     background:#0f172a; color:#fff; margin:0; padding:10px;
     display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
     touch-action: manipulation;
-    transition: padding-bottom .15s ease; /* 余白の予約が滑らかに */
+    transition: padding-bottom .15s ease;
   }
   h1{ margin:4px 0 2px; font-size:clamp(18px,5vw,22px); }
   #info{ margin:4px 0 8px; font-size:0.95rem; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
@@ -28,8 +28,7 @@
   .tbtn{
     background:#22d3ee; color:#062029; border:none; padding:8px 12px;
     border-radius:10px; font-weight:900; cursor:pointer; font-size:clamp(14px,3.6vw,16px);
-    box-shadow: 0 4px 14px #00000040;
-    touch-action: manipulation;
+    box-shadow: 0 4px 14px #00000040; touch-action: manipulation;
   }
   .tbtn.secondary{ background:#334155; color:#d7e5ff; }
 
@@ -67,21 +66,22 @@
     visibility:hidden;
   }
 
-  /* 矢印パッド：幅を min(100vw-16px, 520px) に制限してデスクトップで細身に */
+  /* ▼矢印パッド（タッチ端末のみ表示） */
   .controls{
     position:fixed; left:50%; transform:translateX(-50%);
     bottom:8px; background:#0b1220e6; backdrop-filter: blur(6px);
     padding:10px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    border-radius:14px; width: min(calc(100vw - 16px), 520px);
+    border-radius:14px;
+    width: min(520px, 92vw);                 /* デスクトップでも細身 */
     display:grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, var(--btn));
     gap:8px; z-index:999;
   }
   @media (max-height: 720px){
     .controls{ gap:6px; padding:8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   }
-  /* デスクトップ（マウス/トラックパッド）では矢印パッドを隠す */
+  /* デスクトップでは非表示（Safari/Chrome対策で !important） */
   @media (hover:hover) and (pointer:fine){
-    .controls{ display:none; }
+    .controls{ display:none !important; }
   }
 
   .btn{
@@ -100,10 +100,8 @@
   }
   #clearedPanel h2{ margin:0 0 6px; font-size:14px; font-weight:800; color:#cde9ff; }
   #clearedList{ display:flex; gap:6px; flex-wrap:wrap; max-height:100px; overflow:auto; }
-  .primeTag{
-    background:#0ea5e9; color:#002233; font-weight:900; border-radius:999px; padding:4px 10px; font-size:14px;
-    box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center;
-  }
+
+  .primeTag{ background:#0ea5e9; color:#002233; font-weight:900; border-radius:999px; padding:4px 10px; font-size:14px; box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center; }
 
   #toastArea{
     position:fixed; left:0; right:0; top:60px; display:flex; justify-content:center; gap:8px;
@@ -148,7 +146,7 @@
 
 <div id="game-container"></div>
 
-<!-- タッチ端末向け矢印 -->
+<!-- タッチ端末専用 矢印 -->
 <div class="controls" id="controls">
   <button class="btn" id="btn-up">↑</button>
   <button class="btn" id="btn-left">←</button>
@@ -220,7 +218,6 @@
   const btnDown = document.getElementById('btn-down');
   const btnLeft = document.getElementById('btn-left');
   const btnRight = document.getElementById('btn-right');
-
   const controls = document.getElementById('controls');
 
   let board, active, timer=null, score=0, highScore=0, busy=false, running=false, wasRunning=false;
@@ -235,6 +232,12 @@
       if(now - last < 300){ e.preventDefault(); }
       last = now;
     }, {passive:false});
+  })();
+
+  // ====== デスクトップ判定でJS側からも非表示（Safariの一部環境対策）======
+  (function hideControlsOnDesktop(){
+    const desktopLike = window.matchMedia('(hover:hover) and (pointer:fine)').matches || (navigator.maxTouchPoints||0) === 0;
+    if(desktopLike){ controls.style.display='none'; document.body.style.paddingBottom='10px'; }
   })();
 
   // ====== util ======
@@ -317,8 +320,8 @@
     loadHighScore();
     spawn();
     draw();
-    stop(); // 初期は停止
-    reserveSpace(); // ← 矢印パッドの高さ分だけ下余白を確保
+    stop();                       // 初期は停止
+    reserveSpace();               // 矢印が出ているときだけ下余白を確保
   }
 
   // ====== ピース ======
@@ -701,7 +704,7 @@
     sp.className = 'primeTag'; sp.textContent = n.toString(); return sp;
   }
 
-  // ===== 矢印パッドの高さ分の余白を自動予約（重なり防止） =====
+  // ===== 矢印パッド表示時だけ下余白を確保 =====
   function reserveSpace(){
     const visible = getComputedStyle(controls).display !== 'none';
     if(visible){
@@ -715,7 +718,11 @@
   (document.fonts?.ready || Promise.resolve()).then(reserveSpace);
 
   // 起動
-  buildGrid(); init();
+  // 起動
+buildGrid();
+init();
+
 </script>
 </body>
 </html>
+
