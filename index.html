@@ -70,12 +70,21 @@
     max-width:min(96vw, 560px); width:100%; border-radius:12px;
   }
   #clearedPanel h2{ margin:0 0 6px; font-size:14px; font-weight:800; color:#cde9ff; }
-  #clearedList{ display:flex; gap:6px; flex-wrap:wrap; max-height:100px; overflow:auto; }
+
+  /* ★ 固定高さ＋スクロールに変更 */
+  #clearedList{
+    display:flex; flex-wrap:wrap; gap:6px;
+    height:120px;             /* 固定高さ（お好みで調整可） */
+    overflow-y:auto; overflow-x:hidden;
+    align-content:flex-start; /* 複数行を上詰めで配置 */
+    padding-right:4px;        /* スクロールバー分の余白 */
+  }
 
   .primeTag{
     background:#0ea5e9; color:#002233; font-weight:900;
     border-radius:999px; padding:4px 10px; font-size:14px;
     box-shadow: 0 2px 6px #00000033; display:inline-flex; align-items:center;
+    white-space:nowrap;        /* 中で折り返さない */
   }
 
   #toastArea{
@@ -114,9 +123,7 @@
 <div id="topbar">
   <button class="tbtn" id="startToggle">▶︎ スタート</button>
   <button class="tbtn secondary" id="openPrime">📜 素数一覧</button>
-  <!-- 追加：豆知識 -->
   <button class="tbtn secondary" id="openTips">💡 豆知識</button>
-
   <span id="chainBadge">Chain x1</span>
 </div>
 
@@ -171,7 +178,7 @@
         </div>
         <div class="tipItem">
           <h4 class="tipTitle">エマープ（Emirp）</h4>
-          <p class="tipDesc">数字を逆順にした数も<strong>別の</strong>素数になるもの。例: 13→31, 17→71。回文素数は除く（逆にして同じなので）。</p>
+          <p class="tipDesc">数字を逆順にした数も<strong>別の</strong>素数になるもの。例: 13→31, 17→71。回文素数は除く。</p>
         </div>
         <div class="tipItem">
           <h4 class="tipTitle">双子素数</h4>
@@ -197,7 +204,7 @@
 
 <script>
   // ====== 設定 ======
-  let ROWS = 12; // ★ 14 → 12 に変更
+  let ROWS = 12; // 固定：12行
   const COLS = 10, TICK = 550;
   const SCORE_CELL = 50, SCORE_GROUP = 100;
 
@@ -268,7 +275,7 @@
       ensureAudio();
       const o = audioCtx.createOscillator();
       const g = audioCtx.createGain();
-      o.type = 'square';
+    o.type = 'square';
       const base = 520, step = 110;
       o.frequency.value = base + step*(chain-1);
       g.gain.value = 0.08;
@@ -547,6 +554,7 @@
       tag.textContent = n;
       clearedListEl.appendChild(tag);
     }
+    clearedListEl.scrollTop = 0; // ★ 最新を常に先頭に表示
   }
 
   function draw(skipActive=false){
@@ -584,7 +592,7 @@
     }
   }
 
-  // ====== 豆知識タグ抽出（表示名も修正：エマープ） ======
+  // ====== 豆知識タグ抽出（表示名：エマープ） ======
   function isPalindromeStr(s){ return s === [...s].reverse().join(''); }
   function isProbablePrimeMR(n){
     if(n < 2) return false;
@@ -623,7 +631,7 @@
     const s = String(n);
     if(isPalindromeStr(s)) tags.push('回文');
     const rev = Number([...s].reverse().join(''));
-    if(rev !== n && isProbablePrimeMR(rev)) tags.push('エマープ'); // ← 表示名変更
+    if(rev !== n && isProbablePrimeMR(rev)) tags.push('エマープ');
     if(isProbablePrimeMR(n-2) || isProbablePrimeMR(n+2)) tags.push('双子');
     if(isProbablePrimeMR(2*n + 1)) tags.push('ソフィーG');
     if(n % 2 === 1 && isProbablePrimeMR((n-1)/2)) tags.push('セーフ');
@@ -642,20 +650,19 @@
     }
   });
 
-  // ---- ジェスチャー（盤面全体） ----
+  // ---- ジェスチャー（盤面全体）----
   (function setupGestures(el){
-    let sx=0, sy=0, ex=0, ey=0, t0=0, moved=false;
+    let sx=0, sy=0, ex=0, ey=0, t0=0;
     const TH_SWIPE = 24, TH_TAP = 12, TAP_TIME = 280;
 
     el.addEventListener('touchstart', (e)=>{
       const t = e.changedTouches[0];
-      sx = ex = t.clientX; sy = ey = t.clientY; t0 = Date.now(); moved=false;
+      sx = ex = t.clientX; sy = ey = t.clientY; t0 = Date.now();
     }, {passive:true});
 
     el.addEventListener('touchmove', (e)=>{
       const t = e.changedTouches[0];
       ex = t.clientX; ey = t.clientY;
-      if(Math.abs(ex-sx) > 2 || Math.abs(ey-sy) > 2) moved=true;
       e.preventDefault(); // スクロール抑制
     }, {passive:false});
 
@@ -731,5 +738,3 @@
 </script>
 </body>
 </html>
-
-
